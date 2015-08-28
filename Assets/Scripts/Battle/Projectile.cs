@@ -185,6 +185,9 @@ public class Projectile : NetworkBehaviour
             }
         }
         RpcPlayPointEffect(location);
+        var go = PrefabHelper.InstantiateAndReset(ExplodePrefab, null);
+        go.transform.position = location;
+        Destroy(go, 10);
     }
 
     [Server]

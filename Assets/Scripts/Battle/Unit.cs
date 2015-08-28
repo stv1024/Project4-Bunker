@@ -3,7 +3,6 @@ using System.Collections;
 using Fairwood.Math;
 using UnityEngine.Assertions;
 using UnityEngine.Networking;
-using PlayerController = UnityEngine.Networking.PlayerController;
 
 public class Unit : NetworkBehaviour
 {
@@ -90,6 +89,7 @@ public class Unit : NetworkBehaviour
         }
 
         NetworkManager.singleton.GetComponent<UManagerHUG>().showGUI = false;
+        CmdSwitchSkill(0);
     }
 
     [Command]
@@ -158,7 +158,7 @@ public class Unit : NetworkBehaviour
 
     #endregion
 
-    [Command]
+    //[Command]
     public void CmdSwitchSkill(int skillSlot)
     {
         CurrentSelectedSkill = SkillList[skillSlot];
@@ -170,6 +170,7 @@ public class Unit : NetworkBehaviour
     }
     public void CastSkill(Skill skill, Vector3 displacement)
     {
+        Debug.LogFormat("CastSkill({0},{1}", skill.Name, skill.Amount);
         if (skill.CDRemaining > 0 || skill.Amount <= 0)
         {
             return;
@@ -180,11 +181,11 @@ public class Unit : NetworkBehaviour
         {
             Animator.SetTrigger("CastSkill1");
         }
-        CmdCastAtkSkill(skill, displacement);
+        CmdCastAtkSkill(displacement);
     }
 
     [Command]
-    public void CmdCastAtkSkill(Skill skill, Vector3 displacement)
+    public void CmdCastAtkSkill(Vector3 displacement)
     {
         if (Animator)
         {
@@ -210,9 +211,9 @@ public class Unit : NetworkBehaviour
             {
                 _redFlashLeftTime -= Time.deltaTime;
 
-                var color = (Color.white*
+                var color = (Color.white *
                              BattleEngine.Instance.OnDamagedRedFlashCurve.Evaluate(1 -
-                                                                                     _redFlashLeftTime/
+                                                                                     _redFlashLeftTime /
                                                                                      BattleEngine.Instance
                                                                                          .OnDamagedRedFlashDuraion));
                 color.r = 1;
@@ -230,7 +231,7 @@ public class Unit : NetworkBehaviour
     {
         var rgd = GetComponent<Rigidbody>();
         rgd.AddExplosionForce(force, explodePosition, explodeRadius);
-        rgd.AddForce(Vector3.up/((explodePosition - transform.position).magnitude + 1) * 2000);
+        rgd.AddForce(Vector3.up / ((explodePosition - transform.position).magnitude + 1) * 2000);
     }
     public float TakeDamage(Unit caster, float power)
     {
@@ -292,14 +293,32 @@ public class Unit : NetworkBehaviour
         go.transform.forward = displacement;
         var rigid = go.GetComponent<Rigidbody>();
         var projectile = go.GetComponent<Projectile>();
-        var actualDisplacement = displacement.normalized*
-                                 Mathf.Max(0, displacement.magnitude - LaunchPoint.localPosition.z);
+        var actualDisplacement = displacement.normalized *
+                                 Mathf.Max(10, displacement.magnitude - LaunchPoint.localPosition.z);
         rigid.velocity = actualDisplacement / projectile.Lifespan * ratio;
         projectile.Launcher = this;
 
         NetworkServer.Spawn(go);
     }
+    [Command]
+    public void CmdCreateProjectile2(Vector3 displacement)
+    {
+        var go = PrefabHelper.InstantiateAndReset(BombPrefab, null);
+        go.transform.position = transform.TransformPoint(new Vector3(0, 1.1f, 0));
+        go.transform.forward = displacement;
+        var rigid = go.GetComponent<Rigidbody>();
+        var ratio = 0.9f;
+        var xzSpeed = Parameters.Instance.BombXZSpeed;
+        var t = displacement.magnitude / xzSpeed;
+        var vy = Parameters.Instance.BombGravity * 0.5f * t;
+        rigid.velocity = (displacement.normalized * xzSpeed + Vector3.up * vy) * ratio;
+        var projectile = go.GetComponent<Projectile>();
+        projectile.Launcher = this;
+        //projectile.Lifespan = t;
+        go.GetComponent<ConstantForce>().force = Vector3.down * rigid.mass * Parameters.Instance.BombGravity;
 
+        NetworkServer.Spawn(go);
+    }
 
     public float GetSkillMaxGeodesicDistance(int skillID)
     {

@@ -19,9 +19,14 @@ public class UnitController : MonoBehaviour
     public void Init(Unit unit)
     {
         FocusedUnit = unit;
-        CameraFollow.Target = unit.transform;
+        CameraFollow.SetTarget(unit.transform, FocusedUnit.Data.Camp == 2);
     }
 
     public BunkerGizmoContainer BunkerGizmoContainer;
 
+    public void SwitchSkill(int slotID)
+    {
+        Debug.LogFormat("SwitchSkill({0})", slotID);
+        if (FocusedUnit) FocusedUnit.CmdSwitchSkill(slotID);
+    }
 }

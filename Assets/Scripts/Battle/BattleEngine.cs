@@ -42,7 +42,7 @@ public class BattleEngine : MonoBehaviour
 
     public void OnUnitDie(Unit unit, Unit killer)
     {
-        if (killer && killer != unit) killer.Data.KillCount += 1;
+        //if (killer && killer != unit) killer.Data.KillCount += 1;
     }
 
     public void OnAvatarClick()

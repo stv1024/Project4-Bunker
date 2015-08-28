@@ -22,4 +22,7 @@ public class Parameters : ScriptableObject
     public float JumpingHeight = 1;
     public float JumpingTime = 0.5f;
     public float JumpingGravity;
+
+    public float BombXZSpeed = 5;
+    public float BombGravity = -2f;
 }

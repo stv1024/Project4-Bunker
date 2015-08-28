@@ -5,6 +5,7 @@ using UnityEngine;
 public class Skill
 {
     public int SlotID;
+    public string Name;
     public Unit Caster;
     public SkillInfo Info;
 
@@ -13,6 +14,7 @@ public class Skill
 
     public void Reset(Unit caster, int slotID)
     {
+        Debug.LogFormat("Skill.Reset");
         Caster = caster;
         SlotID = slotID;
         CDRemaining = Info.CD;
@@ -33,7 +35,15 @@ public class Skill
 
     public void OnAttackFrame(Vector3 displacement)
     {
-        Caster.CmdCreateProjectile1(displacement);
+        switch (SlotID)
+        {
+            case 0:
+                Caster.CmdCreateProjectile1(displacement);
+                break;
+            case 1:
+                Caster.CmdCreateProjectile2(displacement);
+                break;
+        }
     }
 
     public void Finish()
