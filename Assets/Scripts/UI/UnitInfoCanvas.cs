@@ -15,8 +15,8 @@ public class UnitInfoCanvas : MonoBehaviour
     {
         if (Owner)
         {
-            //if (HPSlider) HPSlider.value = Owner.Data.hp / Owner.Data.HP;
-            //if (MPSlider) MPSlider.value = Owner.Data.mp / Owner.Data.MP;
+            if (HPSlider) HPSlider.value = Owner.Data.hp / Owner.Data.HP;
+            if (MPSlider) MPSlider.value = Owner.Data.mp / Owner.Data.MP;
         }
     }
 }

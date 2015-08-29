@@ -10,7 +10,8 @@ public class BattleEngine : MonoBehaviour
 {
     public static BattleEngine Instance { get; private set; }
 
-    public AttackControlPad AttackControlPad;
+    //public AttackControlPad AttackControlPad;
+    public WeaponControlJoystick WeaponControlJoystick;
 
     public static bool IsHost;
 

@@ -1,13 +1,12 @@
 ﻿using Fairwood.Math;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 覆盖屏幕右半边的攻击控制器
+/// 武器摇杆，基于Gizmo
 /// </summary>
-public class AttackControlPad : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
+public class WeaponControlJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
 {
     public enum StateEnum
     {
@@ -17,7 +16,6 @@ public class AttackControlPad : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     }
 
     public StateEnum State = StateEnum.Idle;
-    public MainUI MainUI;
 
     public Transform MainCameraTra;
     public Transform AssistPlane;
@@ -82,7 +80,7 @@ public class AttackControlPad : MonoBehaviour, IPointerDownHandler, IPointerUpHa
                 TouchSpot.localPosition = dragDisplacement * (1800f / Screen.width);
                 DragDrop.parent.right = dragDisplacement;
                 DragDrop.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, dragDisplacement.magnitude + 71 + 20);
-                
+
                 #region 辅助瞄准
                 _assistAimingTarget = null;
                 //if (false)
@@ -137,10 +135,12 @@ public class AttackControlPad : MonoBehaviour, IPointerDownHandler, IPointerUpHa
         State = StateEnum.InvalidDragging;
         PressPosition = eventData.pressPosition;
         CurrentPosition = eventData.position;
-
-        var pos = PressPosition * 1800f/Screen.width;
+        Debug.LogFormat("CurrentPosition=" + CurrentPosition);
+        var pos = PressPosition * 1800f / Screen.width;
         TouchCircle.localPosition = pos;
         TouchSpot.localPosition = Vector3.zero;
+
+        //GetComponent<GraphicRaycaster>().Raycast(eventData, );
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -194,11 +194,11 @@ public class AttackControlPad : MonoBehaviour, IPointerDownHandler, IPointerUpHa
         var screenStartPos = cam.WorldToScreenPoint(focusedUnit.Position.SetV3Y(0));
 
         var ray0 = cam.ScreenPointToRay(screenStartPos);
-        var startPos = ray0.GetPoint(-ray0.origin.y/ray0.direction.y);
+        var startPos = ray0.GetPoint(-ray0.origin.y / ray0.direction.y);
         var ray1 = cam.ScreenPointToRay(screenStartPos.ToVector2() + dragDisplacement);
         var endPos = ray1.GetPoint(-ray1.origin.y / ray1.direction.y);
-        var geodesicDisplacement = (endPos - startPos).normalized*dragDisplacement.magnitude*0.03f;
-                                   //focusedUnit.SkillDragToDisplacementRatioList[CurrentAttackSkillID];
+        var geodesicDisplacement = (endPos - startPos).normalized * dragDisplacement.magnitude * 0.03f;
+        //focusedUnit.SkillDragToDisplacementRatioList[CurrentAttackSkillID];
         return geodesicDisplacement;
     }
 

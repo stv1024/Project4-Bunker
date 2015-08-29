@@ -10,11 +10,13 @@ public static class LayerManager
         public const int Projectile = 8;
         public const int Unit = 9;
         public const int Ground = 10;
+        public const int CollectableBox = 12;
     }
     public static class Mask
     {
         public const int Projectile = 1 << ID.Projectile;
         public const int Unit = 1<<ID.Unit;
         public const int Ground = 1 << ID.Ground;
+        public const int CollectableBox = 1 << ID.CollectableBox;
     }
 }

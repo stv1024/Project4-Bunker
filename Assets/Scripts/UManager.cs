@@ -21,17 +21,26 @@ public class UManager : NetworkManager
 
     public override void OnServerSceneChanged(string sceneName)
     {
+        Debug.LogFormat("OnServerSceneChanged({0})", sceneName);
         base.OnServerSceneChanged(sceneName);
         ConnectedPlayerCount = 0;
         _nextPlayerID = 1;
+        Debug.LogFormat("3_nextPlayerID={0}", _nextPlayerID);
         BattlefieldInfo = FindObjectOfType<BattlefieldInfo>();
         PlayerCampCount = BattlefieldInfo.BaseBunkerList.Length;
-        for (int i = 1; i < PlayerCampCount+1; i++)
+        for (int i = 1; i < PlayerCampCount + 1; i++)
         {
             CampOccupationList[i] = 0;
         }
     }
+    public override void OnClientSceneChanged(NetworkConnection conn)
+    {
+        Debug.LogFormat("OnClientSceneChanged({0})", conn.address);
+        base.OnClientSceneChanged(conn);
+        BattlefieldInfo = FindObjectOfType<BattlefieldInfo>();
+    }
 
+    //Server
     public void DidAddPlayer(Unit playerUnit)
     {
         ConnectedPlayerCount++;

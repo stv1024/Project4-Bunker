@@ -7,12 +7,12 @@ using UnityEngine;
 /// </summary>
 public class JoystickFeedbackGizmo : MonoBehaviour
 {
-    public AttackControlPad Joystick;
+    public WeaponControlJoystick Joystick;
     public Transform CenterObject;
     public GameObject MinCircle;
     public GameObject Spot;
 
-    private AttackControlPad.StateEnum _lastState;
+    private WeaponControlJoystick.StateEnum _lastState;
 
     void Awake()
     {
@@ -33,21 +33,21 @@ public class JoystickFeedbackGizmo : MonoBehaviour
             StateTransition(_lastState, Joystick.State);
             _lastState = Joystick.State;
         }
-        if (Joystick.State != AttackControlPad.StateEnum.Idle)
+        if (Joystick.State != WeaponControlJoystick.StateEnum.Idle)
         {
             Spot.transform.position = transform.position + Joystick.GeodesicDisplacement;
         }
     }
 
-    void StateTransition(AttackControlPad.StateEnum lastState, AttackControlPad.StateEnum curState)
+    void StateTransition(WeaponControlJoystick.StateEnum lastState, WeaponControlJoystick.StateEnum curState)
     {
         switch (curState)
         {
-            case AttackControlPad.StateEnum.Idle:
+            case WeaponControlJoystick.StateEnum.Idle:
                 Hide();
                 break;
-            case AttackControlPad.StateEnum.InvalidDragging:
-            case AttackControlPad.StateEnum.ValidDragging:
+            case WeaponControlJoystick.StateEnum.InvalidDragging:
+            case WeaponControlJoystick.StateEnum.ValidDragging:
                 MinCircle.SetActive(true);
                 Spot.SetActive(true);
                 break;

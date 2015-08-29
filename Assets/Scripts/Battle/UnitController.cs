@@ -27,6 +27,6 @@ public class UnitController : MonoBehaviour
     public void SwitchSkill(int slotID)
     {
         Debug.LogFormat("SwitchSkill({0})", slotID);
-        if (FocusedUnit) FocusedUnit.CmdSwitchSkill(slotID);
+        if (FocusedUnit) FocusedUnit.CmdSwitchWeapon(slotID);
     }
 }

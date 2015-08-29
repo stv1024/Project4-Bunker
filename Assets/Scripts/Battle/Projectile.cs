@@ -24,7 +24,7 @@ public class Projectile : NetworkBehaviour
     
     public bool ForwardToVelocity;
     public float Lifespan;
-    public bool UseGravity;
+    public float Gravity;
     public float DamagePower = 400;
     public float ExplodeForce = 10;
     public float ExplodeRadius = 10;
@@ -35,18 +35,32 @@ public class Projectile : NetworkBehaviour
 
     public GameObject ExplodePrefab;
 
-
+    private Vector3 _lastPosition;
 
     public override void OnStartServer()
     {
         _remainingLifespan = Lifespan;
         var constForce = GetComponent<ConstantForce>();
-        if (constForce) constForce.enabled = UseGravity;
+        if (constForce)
+        {
+            if (Math.Abs(Gravity) > 0.0001f)
+            {
+                constForce.force = Vector3.down*GetComponent<Rigidbody>().mass*Gravity;
+                constForce.enabled = true;
+            }
+            else
+            {
+                constForce.enabled = false;
+            }
+        }
 
-        if (Launcher) Physics.IgnoreCollision(GetComponent<Collider>(), Launcher.GetComponent<Collider>());
+        var myCollider = GetComponent<Collider>();
+        if (Launcher && myCollider && myCollider.enabled) Physics.IgnoreCollision(GetComponent<Collider>(), Launcher.GetComponent<Collider>());
+
+        _lastPosition = transform.position;
     }
 
-	[ServerCallback]
+    [ServerCallback]
     protected virtual void Update()
     {
         if (ForwardToVelocity)
@@ -59,7 +73,8 @@ public class Projectile : NetworkBehaviour
         }
         if (!_hasEnbledHittingLauncher && Lifespan - _remainingLifespan > 0.3f)
         {
-            if (Launcher) Physics.IgnoreCollision(GetComponent<Collider>(), Launcher.GetComponent<Collider>(), false);//处理和发射者的碰撞
+            var myCollider = GetComponent<Collider>();
+            if (Launcher && myCollider && myCollider.enabled) Physics.IgnoreCollision(myCollider, Launcher.GetComponent<Collider>(), false);//处理和发射者的碰撞
             _hasEnbledHittingLauncher = true;
         }
         if (Lifespan > 0 && _remainingLifespan > 0)
@@ -89,9 +104,31 @@ public class Projectile : NetworkBehaviour
         }
     }
 
+
     [ServerCallback]
-    void OnTriggerEnter(Collider other)
+    protected virtual void FixedUpdate()
     {
+        var myCollider = GetComponent<Collider>();
+        if (!myCollider || !myCollider.enabled)
+        {
+            RaycastHit hitInfo;
+            var justDisplacement = transform.position - _lastPosition;
+            var isHit = Physics.Raycast(new Ray(_lastPosition, justDisplacement), out hitInfo,
+                justDisplacement.magnitude);
+            if (isHit)
+            {
+                transform.position = hitInfo.point;
+                var other = hitInfo.collider;
+
+                OnTriggerEnter(other);
+            }
+        }
+        _lastPosition = transform.position;
+    }
+    protected virtual void OnTriggerEnter(Collider other)
+    {
+        var unit = other.GetComponent<Unit>();
+        TakeEffectAt(unit, transform.position);
         switch (AfterHitBehavior)
         {
             case AfterHitBehaviorEnum.DoNothing:
@@ -106,58 +143,24 @@ public class Projectile : NetworkBehaviour
                 var otherRgd = other.GetComponent<Rigidbody>();
                 if (otherRgd)
                 {
-                    var impulse = rigid.mass*rigid.velocity;
+                    var impulse = rigid.mass * rigid.velocity;
                     otherRgd.AddForceAtPosition(impulse, rigid.worldCenterOfMass, ForceMode.Impulse);
                 }
                 Destroy(rigid);
-                GetComponent<NetworkTransform>().transformSyncMode = NetworkTransform.TransformSyncMode.SyncTransform; 
+                GetComponent<NetworkTransform>().transformSyncMode =
+                    NetworkTransform.TransformSyncMode.SyncTransform;
                 GetComponent<Collider>().enabled = false;
                 enabled = false;
 
-                var unit = other.GetComponent<Unit>();
-                if (unit)
-                {
-                    Hit(unit);
-                }
                 Destroy(gameObject);
                 NetworkServer.Destroy(gameObject);
                 //Destroy(gameObject, 5);
                 break;
             case AfterHitBehaviorEnum.Terminate:
-                TakeEffectAt(null, transform.position);
                 Terminate();
                 break;
         }
     }
-    //protected virtual void OnCollisionEnter(Collision collision)
-    //{
-    //    Debug.LogFormat("Coll with:{0}", collision.collider.name);
-    //    switch (AfterHitBehavior)
-    //    {
-    //        case AfterHitBehaviorEnum.DoNothing:
-    //            break;
-    //        case AfterHitBehaviorEnum.Remain:
-    //            if (collision.transform.lossyScale == Vector3.one)
-    //            {
-    //                transform.parent = collision.transform;
-    //            }
-    //            Destroy(GetComponent<ConstantForce>());
-    //            var rigid = GetComponent<Rigidbody>();
-    //            Destroy(rigid);
-    //            GetComponent<Collider>().enabled = false;
-    //            enabled = false;
-                
-    //            var unit = collision.gameObject.GetComponent<Unit>();
-    //            if (unit)
-    //            {
-    //                Hit(unit);
-    //            }
-    //            break;
-    //        case AfterHitBehaviorEnum.Terminate:
-    //            Terminate();
-    //            break;
-    //    }
-    //}
 
     [Server]
     protected virtual void Hit(Unit target)
@@ -168,26 +171,40 @@ public class Projectile : NetworkBehaviour
     [Server]
     protected virtual void TakeEffectAt(Unit target, Vector3 location)
     {
-        var colliders = Physics.OverlapSphere(location, ExplodeRadius);
-        foreach (var cldr in colliders)
+        if (ExplodeRadius > 0)
         {
-            var unit = cldr.GetComponent<Unit>();
-            if (unit && unit.Data.IsAlive)
+            var colliders = Physics.OverlapSphere(location, ExplodeRadius);
+            foreach (var cldr in colliders)
             {
-                var toCurUnitVector = (unit.transform.position - location);
-                var hasBlock = Physics.Raycast(location, toCurUnitVector, toCurUnitVector.magnitude,
-                    LayerManager.Mask.Ground);
-                if (!hasBlock)
+                var unit = cldr.GetComponent<Unit>();
+                if (unit && unit.Data.IsAlive)
                 {
-                    TakeEffectOn(unit);
-                    unit.PushBack(ExplodeForce, location, ExplodeRadius);
+                    var toCurUnitVector = (unit.transform.position - location);
+                    var hasBlock = Physics.Raycast(location, toCurUnitVector, toCurUnitVector.magnitude,
+                        LayerManager.Mask.Ground);
+                    if (!hasBlock)
+                    {
+                        TakeEffectOn(unit);
+                        unit.PushBack(ExplodeForce, location, ExplodeRadius);
+                    }
                 }
             }
+            RpcPlayPointEffect(location);
         }
-        RpcPlayPointEffect(location);
-        var go = PrefabHelper.InstantiateAndReset(ExplodePrefab, null);
-        go.transform.position = location;
-        Destroy(go, 10);
+        else
+        {
+            if (target)
+            {
+                Hit(target);
+            }
+        }
+
+        if (ExplodePrefab)
+        {
+            var go = PrefabHelper.InstantiateAndReset(ExplodePrefab, null);
+            go.transform.position = location;
+            Destroy(go, 10);
+        }
     }
 
     [Server]

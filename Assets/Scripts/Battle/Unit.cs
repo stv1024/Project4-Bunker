@@ -11,7 +11,7 @@ public class Unit : NetworkBehaviour
         Idle,
         Running,
         Aiming,
-        Casting,
+        Firing,
         Hurt
     }
 
@@ -32,9 +32,8 @@ public class Unit : NetworkBehaviour
         get { return transform.position.SetV3Y(0); }
     }
 
-    public Skill[] SkillList;
-    public Skill CurrentSelectedSkill;
-    public Skill CurrentCastingSkill;
+    public Weapon[] SkillList;
+    public Weapon CurrentSelectedWeapon;
 
     //public float[] SkillDragToDisplacementRatioList;
 
@@ -52,10 +51,6 @@ public class Unit : NetworkBehaviour
         Debug.LogFormat("OnStartServer {0}", Position);
         base.OnStartServer();
         BattleEngine.IsHost = true;
-        for (int i = 0; i < SkillList.Length; i++)
-        {
-            SkillList[i].Reset(this, i);
-        }
     }
     public override void OnStartClient()
     {
@@ -84,17 +79,23 @@ public class Unit : NetworkBehaviour
         if (isLocalPlayer)
         {
             UnitController.Instance.Init(this);
-            BattleEngine.Instance.AttackControlPad.Init(this);
+            BattleEngine.Instance.WeaponControlJoystick.Init(this);
             CmdRequestCampInfo();
         }
 
         NetworkManager.singleton.GetComponent<UManagerHUG>().showGUI = false;
-        CmdSwitchSkill(0);
+
+        for (int i = 0; i < SkillList.Length; i++)
+        {
+            SkillList[i].Reset(this, i);
+        }
+        CmdSwitchWeapon(0);
     }
 
     [Command]
     void CmdRequestCampInfo()
     {
+        Debug.LogFormat("CmdRequestCampInfo({0})", name);
         UManager.Instance.DidAddPlayer(this);
     }
 
@@ -159,24 +160,23 @@ public class Unit : NetworkBehaviour
     #endregion
 
     //[Command]
-    public void CmdSwitchSkill(int skillSlot)
+    public void CmdSwitchWeapon(int skillSlot)
     {
-        CurrentSelectedSkill = SkillList[skillSlot];
+        if (skillSlot < SkillList.Length) CurrentSelectedWeapon = SkillList[skillSlot];
     }
 
-    public void CastSkill(Vector3 displacement)
+    public void Fire(Vector3 displacement)
     {
-        CastSkill(CurrentSelectedSkill, displacement);
+        FireWeapon(CurrentSelectedWeapon, displacement);
     }
-    public void CastSkill(Skill skill, Vector3 displacement)
+    public void FireWeapon(Weapon weapon, Vector3 displacement)
     {
-        Debug.LogFormat("CastSkill({0},{1}", skill.Name, skill.Amount);
-        if (skill.CDRemaining > 0 || skill.Amount <= 0)
+        if (weapon.CDRemaining > 0 || weapon.Amount <= 0)
         {
             return;
         }
-        CurrentCastingSkill = skill;
-        skill.Start(displacement);
+        //CurrentCastingSkill = skill;
+        weapon.Fire(displacement);
         if (Animator)
         {
             Animator.SetTrigger("CastSkill1");
@@ -282,24 +282,13 @@ public class Unit : NetworkBehaviour
         BattleEngine.Instance.OnUnitDie(this, killer);
     }
 
+
     [Command]
-    public void CmdCreateProjectile1(Vector3 displacement)
+    public void CmdFireWeapon(int weaponSlot, Vector3 displacement)
     {
-        var ratio = 0.9f;
-
-        //var go = Network.Instantiate(ArrowPrefab, Vector3.zero, Quaternion.identity, 0);
-        var go = PrefabHelper.InstantiateAndReset(ArrowPrefab, null);
-        go.transform.position = LaunchPoint.position;
-        go.transform.forward = displacement;
-        var rigid = go.GetComponent<Rigidbody>();
-        var projectile = go.GetComponent<Projectile>();
-        var actualDisplacement = displacement.normalized *
-                                 Mathf.Max(10, displacement.magnitude - LaunchPoint.localPosition.z);
-        rigid.velocity = actualDisplacement / projectile.Lifespan * ratio;
-        projectile.Launcher = this;
-
-        NetworkServer.Spawn(go);
+        SkillList[weaponSlot].CreateProjectile(displacement);
     }
+
     [Command]
     public void CmdCreateProjectile2(Vector3 displacement)
     {
@@ -335,7 +324,7 @@ public class Unit : NetworkBehaviour
         UnitInfoCanvas.gameObject.SetActive(true);
         RpcRebirth();
 
-        CmdSwitchSkill(0);
+        CmdSwitchWeapon(0);
     }
 
     [ClientRpc]
@@ -350,4 +339,5 @@ public class Unit : NetworkBehaviour
             rgd.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         }
     }
+
 }
