@@ -25,12 +25,13 @@ public class WeaponControlJoystick : MonoBehaviour, IPointerDownHandler, IPointe
 
     public Vector2 PressPosition;//屏幕坐标
     public Vector2 CurrentPosition;//屏幕坐标
-    public Vector3 GeodesicDisplacement;//战场坐标
-
+    public Vector3 WorldDragDisplacement;//世界拖拽位移（与屏幕拖拽距离1:1）
+    public Vector3 WorldAimingDisplacement;//世界瞄准位移（拖拽位移*ratio，不考虑上下限）
+    public Vector3 WorldActualDisplacement;//世界实际位移（瞄准位移，考虑上限，无下限）
+    public bool IsValidDrag;
     private Unit _assistAimingTarget;
     public float AssistAimingWidth = 1;
 
-    public float WorldDisplacementThreshold = 5;
 
 
     //private const float UnitColliderDiameter = 1f;
@@ -63,13 +64,12 @@ public class WeaponControlJoystick : MonoBehaviour, IPointerDownHandler, IPointe
         {
             ResetAssistPlaneRotation();//坐标转换时使用的辅助平面，更新状态
             var dragDisplacement = CurrentPosition - PressPosition;//屏幕坐标
-            var dragMagnitude = dragDisplacement.magnitude;
-
-
-            GeodesicDisplacement = DragDisplacementToGeodesicDisplacement(dragDisplacement);//战场坐标
-            //检测是否有效Drag
-            var geodesicMagnitude = GeodesicDisplacement.magnitude;
-            if (geodesicMagnitude > WorldDisplacementThreshold)//有效拖动
+            WorldDragDisplacement = ScreenDragDisplacementToWorldDragDisplacement(dragDisplacement);//战场坐标
+            WorldAimingDisplacement = WorldDragDisplacementToWorldAiming(WorldDragDisplacement);//战场坐标
+            WorldActualDisplacement = WorldAimingDisplacementToWorldActual(WorldAimingDisplacement);
+            var worldAimingMagnitude = WorldAimingDisplacement.magnitude;
+            IsValidDrag = worldAimingMagnitude > focusedUnit.CurrentSelectedWeapon.Info.WorldAimingDisplacementThreshold;
+            if (IsValidDrag)//有效拖动
             {
                 if (State == StateEnum.InvalidDragging)//状态切换
                 {
@@ -110,11 +110,11 @@ public class WeaponControlJoystick : MonoBehaviour, IPointerDownHandler, IPointe
                 //}
                 #endregion
 
-                focusedUnit.transform.forward = GeodesicDisplacement;
+                focusedUnit.transform.forward = WorldAimingDisplacement;
 
                 if (focusedUnit.CurrentSelectedWeapon && focusedUnit.CurrentSelectedWeapon.Info.Automatic)
                 {
-                    focusedUnit.Fire(GeodesicDisplacement);
+                    focusedUnit.Fire(WorldActualDisplacement);
                 }
             }
             else
@@ -151,11 +151,14 @@ public class WeaponControlJoystick : MonoBehaviour, IPointerDownHandler, IPointe
         ResetAssistPlaneRotation();
         if (State == StateEnum.ValidDragging)
         {
-            var dragDisplacement = CurrentPosition - PressPosition;
-            var dragMagnitude = dragDisplacement.magnitude;
-            if (dragMagnitude > WorldDisplacementThreshold) //有效拖动
+            var dragDisplacement = CurrentPosition - PressPosition;//屏幕坐标
+            WorldDragDisplacement = ScreenDragDisplacementToWorldDragDisplacement(dragDisplacement);//战场坐标
+            WorldAimingDisplacement = WorldDragDisplacementToWorldAiming(WorldDragDisplacement);//战场坐标
+            WorldActualDisplacement = WorldAimingDisplacementToWorldActual(WorldAimingDisplacement);
+            var worldAimingMagnitude = WorldAimingDisplacement.magnitude;
+            IsValidDrag = worldAimingMagnitude > focusedUnit.CurrentSelectedWeapon.Info.WorldAimingDisplacementThreshold;
+            if (IsValidDrag)//有效拖动
             {
-                var geodesicDisplacement = DragDisplacementToGeodesicDisplacement(dragDisplacement);
                 Vector3 castSkillDisplacement;
                 if (false && _assistAimingTarget)
                 {
@@ -164,7 +167,7 @@ public class WeaponControlJoystick : MonoBehaviour, IPointerDownHandler, IPointe
                 }
                 else
                 {
-                    castSkillDisplacement = geodesicDisplacement;
+                    castSkillDisplacement = WorldActualDisplacement;
                 }
                 focusedUnit.Fire(castSkillDisplacement);
             }
@@ -186,7 +189,7 @@ public class WeaponControlJoystick : MonoBehaviour, IPointerDownHandler, IPointe
         AssistPlane.right = MainCameraTra.right;
     }
 
-    Vector3 DragDisplacementToGeodesicDisplacement(Vector2 dragDisplacement)
+    Vector3 ScreenDragDisplacementToWorldDragDisplacement(Vector2 dragDisplacement)
     {
         var focusedUnit = UnitController.Instance.FocusedUnit;
         //方案2
@@ -197,9 +200,19 @@ public class WeaponControlJoystick : MonoBehaviour, IPointerDownHandler, IPointe
         var startPos = ray0.GetPoint(-ray0.origin.y / ray0.direction.y);
         var ray1 = cam.ScreenPointToRay(screenStartPos.ToVector2() + dragDisplacement);
         var endPos = ray1.GetPoint(-ray1.origin.y / ray1.direction.y);
-        var geodesicDisplacement = (endPos - startPos).normalized * dragDisplacement.magnitude * 0.03f;
-        //focusedUnit.SkillDragToDisplacementRatioList[CurrentAttackSkillID];
-        return geodesicDisplacement;
+        var worldDragDisplacement = (endPos - startPos).normalized * dragDisplacement.magnitude ;
+        return worldDragDisplacement;
+    }
+
+    Vector3 WorldDragDisplacementToWorldAiming(Vector3 worldDragDisplacement)
+    {
+        var focusedUnit = UnitController.Instance.FocusedUnit;
+        return worldDragDisplacement/Screen.height*focusedUnit.CurrentSelectedWeapon.Info.ViewportDragToWorldRatio;
+    }
+    Vector3 WorldAimingDisplacementToWorldActual(Vector3 worldAimingDisplacement)
+    {
+        var focusedUnit = UnitController.Instance.FocusedUnit;
+        return Vector3.ClampMagnitude(worldAimingDisplacement, focusedUnit.CurrentSelectedWeapon.Info.WorldActualDisplacementMaxLimit);
     }
 
     void ShowUI()

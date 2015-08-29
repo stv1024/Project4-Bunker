@@ -4,10 +4,15 @@ using UnityEngine;
 /// <summary>
 /// 掩体
 /// </summary>
-public class Bunker : MonoBehaviour
+public class Bunker : MonoBehaviour, IAnnihilable
 {
     public BunkerSite[] SiteList;
     public const int SeatsPerSite = 2;
+    public float HP = 300;
+    public float _hp;
+
+    public Transform Entity;
+    private Vector3 _oriScale;
 
     public Vector3 Position
     {
@@ -23,6 +28,9 @@ public class Bunker : MonoBehaviour
         {
             SiteList[i].Init(this, i);
         }
+
+        _hp = HP;
+        _oriScale = transform.localScale;
     }
 
     public void OnSiteClick(int siteID)
@@ -31,4 +39,29 @@ public class Bunker : MonoBehaviour
         UnitController.Instance.FocusedUnit.Walker.WalkTo(SiteList[siteID].Position);
     }
 
+    public float TakeDamage(Unit caster, float power)
+    {
+        var dmg = power*0.5f;
+
+        _hp -= dmg;
+
+        if (_hp <= 0)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            var scale = transform.localScale;
+            var ratio = _hp/HP*0.8f + 0.2f;
+            scale.x = _oriScale.x * ratio;
+            scale.z = _oriScale.z * ratio;
+            transform.localScale = scale;
+        }
+
+        return dmg;
+    }
+    public Transform GetTransform()
+    {
+        return transform;
+    }
 }

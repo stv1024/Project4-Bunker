@@ -36,7 +36,6 @@ public class Weapon : MonoBehaviour
 
     public void Fire(Vector3 displacement)
     {
-        Debug.LogFormat("Weapon.Fire(" + Name);
         CDRemaining += 1f/Info.FiringRate;
         Amount--;
         Caster.CmdFireWeapon(SlotID, displacement);
@@ -55,7 +54,6 @@ public class Weapon : MonoBehaviour
     //只在Server执行
     public void CreateProjectile(Vector3 displacement)
     {
-        Debug.LogFormat("Weapon.CmdCreateProjectile(" + Name);
         var ratio = 0.9f;
 
         //var go = Network.Instantiate(ArrowPrefab, Vector3.zero, Quaternion.identity, 0);

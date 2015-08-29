@@ -10,7 +10,8 @@ public class JoystickFeedbackGizmo : MonoBehaviour
     public WeaponControlJoystick Joystick;
     public Transform CenterObject;
     public GameObject MinCircle;
-    public GameObject Spot;
+    public GameObject FallSpot;
+    public GameObject DragSpot;
 
     private WeaponControlJoystick.StateEnum _lastState;
 
@@ -35,7 +36,9 @@ public class JoystickFeedbackGizmo : MonoBehaviour
         }
         if (Joystick.State != WeaponControlJoystick.StateEnum.Idle)
         {
-            Spot.transform.position = transform.position + Joystick.GeodesicDisplacement;
+            FallSpot.SetActive(Joystick.IsValidDrag);
+            FallSpot.transform.position = transform.position + Joystick.WorldActualDisplacement;
+            DragSpot.transform.position = transform.position + Joystick.WorldAimingDisplacement;
         }
     }
 
@@ -49,7 +52,8 @@ public class JoystickFeedbackGizmo : MonoBehaviour
             case WeaponControlJoystick.StateEnum.InvalidDragging:
             case WeaponControlJoystick.StateEnum.ValidDragging:
                 MinCircle.SetActive(true);
-                Spot.SetActive(true);
+                FallSpot.SetActive(true);
+                DragSpot.SetActive(true);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -59,6 +63,7 @@ public class JoystickFeedbackGizmo : MonoBehaviour
     void Hide()
     {
         MinCircle.SetActive(false);
-        Spot.SetActive(false);
+        FallSpot.SetActive(false);
+        DragSpot.SetActive(false);
     }
 }

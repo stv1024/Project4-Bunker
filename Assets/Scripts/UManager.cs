@@ -60,6 +60,7 @@ public class UManager : NetworkManager
         _nextPlayerID++;
     }
 
+    //Server
     public void DidRemovePlayer(Unit playerUnit)
     {
         ConnectedPlayerCount--;

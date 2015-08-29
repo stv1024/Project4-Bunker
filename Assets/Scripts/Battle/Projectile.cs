@@ -127,8 +127,8 @@ public class Projectile : NetworkBehaviour
     }
     protected virtual void OnTriggerEnter(Collider other)
     {
-        var unit = other.GetComponent<Unit>();
-        TakeEffectAt(unit, transform.position);
+        var entity = other.GetComponent<IAnnihilable>();
+        TakeEffectAt(entity, transform.position);
         switch (AfterHitBehavior)
         {
             case AfterHitBehaviorEnum.DoNothing:
@@ -163,29 +163,24 @@ public class Projectile : NetworkBehaviour
     }
 
     [Server]
-    protected virtual void Hit(Unit target)
-    {
-        TakeEffectOn(target);
-    }
-
-    [Server]
-    protected virtual void TakeEffectAt(Unit target, Vector3 location)
+    protected virtual void TakeEffectAt(IAnnihilable target, Vector3 location)
     {
         if (ExplodeRadius > 0)
         {
             var colliders = Physics.OverlapSphere(location, ExplodeRadius);
             foreach (var cldr in colliders)
             {
-                var unit = cldr.GetComponent<Unit>();
-                if (unit && unit.Data.IsAlive)
+                var entity = cldr.GetComponent<IAnnihilable>();
+                if (entity != null)
                 {
-                    var toCurUnitVector = (unit.transform.position - location);
-                    var hasBlock = Physics.Raycast(location, toCurUnitVector, toCurUnitVector.magnitude,
+                    var toCurUnitVector = (entity.GetTransform().position - location);
+                    RaycastHit hitInfo;
+                    var hasBlock = Physics.Raycast(location, toCurUnitVector, out hitInfo, toCurUnitVector.magnitude,
                         LayerManager.Mask.Ground);
-                    if (!hasBlock)
+                    if (!hasBlock || hitInfo.collider == entity.GetTransform().GetComponent<Collider>())
                     {
-                        TakeEffectOn(unit);
-                        unit.PushBack(ExplodeForce, location, ExplodeRadius);
+                        entity.TakeDamage(Launcher, DamagePower);
+                        //unit.PushBack(ExplodeForce, location, ExplodeRadius);
                     }
                 }
             }
@@ -193,9 +188,9 @@ public class Projectile : NetworkBehaviour
         }
         else
         {
-            if (target)
+            if (target != null)
             {
-                Hit(target);
+                target.TakeDamage(Launcher, DamagePower);
             }
         }
 
@@ -205,12 +200,6 @@ public class Projectile : NetworkBehaviour
             go.transform.position = location;
             Destroy(go, 10);
         }
-    }
-
-    [Server]
-    protected virtual void TakeEffectOn(Unit target)
-    {
-        target.TakeDamage(Launcher, DamagePower);
     }
 
     [Server]

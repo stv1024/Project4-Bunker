@@ -4,7 +4,7 @@ using Fairwood.Math;
 using UnityEngine.Assertions;
 using UnityEngine.Networking;
 
-public class Unit : NetworkBehaviour
+public class Unit : NetworkBehaviour, IAnnihilable
 {
     public enum StateEnum
     {
@@ -44,6 +44,11 @@ public class Unit : NetworkBehaviour
     private float _redFlashLeftTime;
 
     private Vector3 _rebirthPosition;
+
+    public Transform GetTransform()
+    {
+        return transform;
+    }
 
     #region 信息同步
     public override void OnStartServer()
@@ -235,6 +240,8 @@ public class Unit : NetworkBehaviour
     }
     public float TakeDamage(Unit caster, float power)
     {
+        if (!Data.IsAlive) return 0;
+
         var dmg = power / (1 + 0.05f * Data.ARM);
         Sethp(Data.hp - dmg);
         if (Data.hp <= 0)
