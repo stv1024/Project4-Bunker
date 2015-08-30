@@ -20,6 +20,7 @@ public class Unit : NetworkBehaviour, IAnnihilable
 
     public UnitInfoCanvas UnitInfoCanvas;
     public Animator Animator;
+    public Renderer ActorRenderer;
 
     public Transform LaunchPoint;
     public GameObject ArrowPrefab;
@@ -123,6 +124,7 @@ public class Unit : NetworkBehaviour, IAnnihilable
             transform.position = position;
             _rebirthPosition = Position;
         }
+        if (ActorRenderer) ActorRenderer.material.mainTexture = Parameters.Instance.CampTextureList[Data.Camp];
     }
 
 
@@ -243,6 +245,8 @@ public class Unit : NetworkBehaviour, IAnnihilable
         if (!Data.IsAlive) return 0;
 
         var dmg = power / (1 + 0.05f * Data.ARM);
+        var validDmg = Mathf.Min(Data.hp, dmg);
+        if (caster && caster.Data.Camp != Data.Camp) caster.Data.CausedDamage += validDmg;
         Sethp(Data.hp - dmg);
         if (Data.hp <= 0)
         {
@@ -250,6 +254,7 @@ public class Unit : NetworkBehaviour, IAnnihilable
             return dmg;
         }
         _redFlashLeftTime = BattleEngine.Instance.OnDamagedRedFlashDuraion;
+
 
         return dmg;
     }
@@ -275,6 +280,7 @@ public class Unit : NetworkBehaviour, IAnnihilable
             rgd.constraints = RigidbodyConstraints.None;
         }
 
+        Data.DieCount ++;
         if (Data.Rebirthable)
         {
             UnitInfoCanvas.gameObject.SetActive(false);

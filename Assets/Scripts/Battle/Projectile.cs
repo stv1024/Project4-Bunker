@@ -198,7 +198,8 @@ public class Projectile : NetworkBehaviour
         {
             var go = PrefabHelper.InstantiateAndReset(ExplodePrefab, null);
             go.transform.position = location;
-            Destroy(go, 10);
+            var ptc = go.GetComponent<ParticleSystem>();
+            Destroy(go, (ptc ? ptc.duration : 0) + 10);
         }
     }
 

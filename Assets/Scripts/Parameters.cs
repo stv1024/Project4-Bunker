@@ -25,4 +25,6 @@ public class Parameters : ScriptableObject
 
     public float BombXZSpeed = 5;
     public float BombGravity = -2f;
+
+    public Texture2D[] CampTextureList;
 }

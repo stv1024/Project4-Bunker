@@ -19,6 +19,8 @@ public class UManager : NetworkManager
     public int ConnectedPlayerCount;
     public BattlefieldInfo BattlefieldInfo;
 
+    public string SavedIP;
+
     public override void OnServerSceneChanged(string sceneName)
     {
         Debug.LogFormat("OnServerSceneChanged({0})", sceneName);
@@ -77,5 +79,7 @@ public class UManager : NetworkManager
         Debug.LogFormat("OnStopClient");
         var hud = GetComponent<UManagerHUG>();
         hud.showGUI = true;
+        networkAddress = SavedIP;
     }
+
 }

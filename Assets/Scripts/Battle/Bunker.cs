@@ -47,7 +47,8 @@ public class Bunker : MonoBehaviour, IAnnihilable
 
         if (_hp <= 0)
         {
-            Destroy(gameObject);
+            Destroy(Entity.gameObject);
+            enabled = false;
         }
         else
         {

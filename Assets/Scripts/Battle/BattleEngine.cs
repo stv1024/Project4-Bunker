@@ -40,10 +40,39 @@ public class BattleEngine : MonoBehaviour
     public RectTransform Arrow;
     public RectTransform ThinArrow;
 
+    public bool IsBattleEnd;
+    void Update()
+    {
+        var battlefieldInfo = UManager.Instance.BattlefieldInfo;
+        if (!IsBattleEnd && battlefieldInfo)
+        {
+            for (int i = 1; i <= 2; i++)
+            {
+                if (battlefieldInfo.BaseBunkerList[i]._hp <= 0)
+                {
+                    var win = battlefieldInfo.BaseBunkerList[i].GetComponent<HomeBunker>().Camp != UnitController.Instance.FocusedUnit.Data.Camp;
+                    IsBattleEnd = true;
+                    BattleEnd(win);
+                }
+            }
+        }
+    }
+
+    void BattleEnd(bool win)
+    {
+        MainUI.Instance.TxtWinLose.text = win ? "YOU WIN" : "YOU LOST";
+        var me = UnitController.Instance.FocusedUnit;
+        MainUI.Instance.TxtStats.text = string.Format(
+@"Kill {0}
+Die {1}
+Damage {2}", me.Data.KillCount, me.Data.DieCount, me.Data.CausedDamage);
+        MainUI.Instance.ShowResult();
+        CoroutineManager.StartCoroutine(new CoroutineManager.Coroutine(5, UManager.Instance.StopHost));
+    }
 
     public void OnUnitDie(Unit unit, Unit killer)
     {
-        //if (killer && killer != unit) killer.Data.KillCount += 1;
+        if (killer && killer != unit) killer.Data.KillCount += 1;
     }
 
     public void OnAvatarClick()

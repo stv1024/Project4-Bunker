@@ -37,6 +37,8 @@ public class UnitData : NetworkBehaviour
 
     [SyncVar]
     public int KillCount;
+    public int DieCount;
+    public float CausedDamage;
 
     [SyncVar]
     public float GlobalCD = 1;
