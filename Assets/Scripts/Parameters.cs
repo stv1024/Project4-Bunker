@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using Fairwood.Math;
 using UnityEngine;
 
 /// <summary>
@@ -27,4 +28,6 @@ public class Parameters : ScriptableObject
     public float BombGravity = -2f;
 
     public Texture2D[] CampTextureList;
+
+    public IntVector2[] KillReward;
 }

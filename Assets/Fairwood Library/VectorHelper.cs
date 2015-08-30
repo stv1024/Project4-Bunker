@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Fairwood.Math
@@ -45,6 +46,7 @@ namespace Fairwood.Math
         }
     }
 
+    [Serializable]
     public struct IntVector2
     {
         public bool Equals(IntVector2 other)
@@ -117,6 +119,7 @@ namespace Fairwood.Math
         }
     }
 
+    [Serializable]
     public struct IntVector3
     {
         public int i, j, k;

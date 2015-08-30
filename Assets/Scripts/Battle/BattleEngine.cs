@@ -72,7 +72,18 @@ Damage {2}", me.Data.KillCount, me.Data.DieCount, me.Data.CausedDamage);
 
     public void OnUnitDie(Unit unit, Unit killer)
     {
-        if (killer && killer != unit) killer.Data.KillCount += 1;
+        if (killer && killer != unit)
+        {
+            killer.Data.KillCount += 1;
+            foreach (var pair in Parameters.KillReward)
+            {
+                if (pair.i < killer.SkillList.Length)
+                {
+                    var weapon = killer.SkillList[pair.i];
+                    if (weapon) weapon.Amount += pair.j;
+                }
+            }
+        }
     }
 
     public void OnAvatarClick()
