@@ -125,9 +125,11 @@ public class Projectile : NetworkBehaviour
         }
         _lastPosition = transform.position;
     }
+    [ServerCallback]
     protected virtual void OnTriggerEnter(Collider other)
     {
         var entity = other.GetComponent<IAnnihilable>();
+        if (ReferenceEquals(entity, Launcher)) return;
         TakeEffectAt(entity, transform.position);
         switch (AfterHitBehavior)
         {
@@ -184,7 +186,6 @@ public class Projectile : NetworkBehaviour
                     }
                 }
             }
-            RpcPlayPointEffect(location);
         }
         else
         {
@@ -194,27 +195,24 @@ public class Projectile : NetworkBehaviour
             }
         }
 
-        if (ExplodePrefab)
-        {
-            var go = PrefabHelper.InstantiateAndReset(ExplodePrefab, null);
-            go.transform.position = location;
-            var ptc = go.GetComponent<ParticleSystem>();
-            Destroy(go, (ptc ? ptc.duration : 0) + 10);
-        }
+        Debug.Log("TryRpcPlayPointEffect(" + location);
+        RpcPlayPointEffect(location);
     }
 
     [Server]
     protected virtual void Terminate()
     {
-        Destroy(gameObject);
-        NetworkServer.Destroy(gameObject);
+//        Destroy(gameObject);
+        CoroutineManager.StartCoroutine(new CoroutineManager.Coroutine(0.05f, ()=>NetworkServer.Destroy(gameObject)));
     }
 
     [ClientRpc]
     public void RpcPlayPointEffect(Vector3 location)//TODO:和Destroy同时故无法在客户端生效
     {
+        Debug.Log("RpcPlayPointEffect(" + location);
         var go = PrefabHelper.InstantiateAndReset(ExplodePrefab, null);
         go.transform.position = location;
-        Destroy(go, 10);
+        var ptc = go.GetComponent<ParticleSystem>();
+        Destroy(go, (ptc ? ptc.duration : 0) + 10);
     }
 }

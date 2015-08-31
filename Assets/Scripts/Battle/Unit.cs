@@ -66,6 +66,10 @@ public class Unit : NetworkBehaviour, IAnnihilable
             Destroy(GetComponent<AI>());
             enabled = false;
         }
+        for (int i = 0; i < SkillList.Length; i++)
+        {
+            SkillList[i].Reset(this, i);
+        }
     }
 
     void Awake()
@@ -84,17 +88,11 @@ public class Unit : NetworkBehaviour, IAnnihilable
         Debug.LogFormat("Unit.OnStartLocalPlayer {0};{1} {2}", GetComponent<NetworkIdentity>().hasAuthority, GetComponent<NetworkIdentity>().isLocalPlayer, netId);
         if (isLocalPlayer)
         {
-            UnitController.Instance.Init(this);
-            BattleEngine.Instance.WeaponControlJoystick.Init(this);
             CmdRequestCampInfo();
         }
 
         NetworkManager.singleton.GetComponent<UManagerHUG>().showGUI = false;
 
-        for (int i = 0; i < SkillList.Length; i++)
-        {
-            SkillList[i].Reset(this, i);
-        }
         CmdSwitchWeapon(0);
     }
 
@@ -123,6 +121,8 @@ public class Unit : NetworkBehaviour, IAnnihilable
         {
             transform.position = position;
             _rebirthPosition = Position;
+            UnitController.Instance.Init(this, camp);
+            BattleEngine.Instance.WeaponControlJoystick.Init(this);
         }
         if (ActorRenderer) ActorRenderer.material.mainTexture = Parameters.Instance.CampTextureList[Data.Camp];
     }

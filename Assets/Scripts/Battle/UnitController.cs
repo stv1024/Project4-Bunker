@@ -16,10 +16,10 @@ public class UnitController : MonoBehaviour
         Instance = this;
     }
 
-    public void Init(Unit unit)
+    public void Init(Unit unit, int camp)
     {
         FocusedUnit = unit;
-        CameraFollow.SetTarget(unit.transform, FocusedUnit.Data.Camp == 2);
+        CameraFollow.SetTarget(unit.transform, camp == 2);
     }
 
     public BunkerGizmoContainer BunkerGizmoContainer;
