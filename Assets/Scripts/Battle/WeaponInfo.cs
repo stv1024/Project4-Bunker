@@ -23,6 +23,8 @@ public class WeaponInfo : ScriptableObject
 
     public float WorldAimingDisplacementThreshold = 2;//低于此值，不是武器射不了那么近，而是玩家放弃射击
     public float WorldActualDisplacementMaxLimit = float.PositiveInfinity;
+    public bool ShowStraightGizmo;
+    public float StraightGizmoLength = 25;
 
     public GameObject ProjectilePrefab;
 }

@@ -37,6 +37,8 @@ public class Projectile : NetworkBehaviour
 
     private Vector3 _lastPosition;
 
+    [HideInInspector] public bool IsTerminated;
+
     public override void OnStartServer()
     {
         _remainingLifespan = Lifespan;
@@ -63,6 +65,7 @@ public class Projectile : NetworkBehaviour
     [ServerCallback]
     protected virtual void Update()
     {
+        if (IsTerminated) return;
         if (ForwardToVelocity)
         {
             var rigid = GetComponent<Rigidbody>();
@@ -108,6 +111,7 @@ public class Projectile : NetworkBehaviour
     [ServerCallback]
     protected virtual void FixedUpdate()
     {
+        if (IsTerminated) return;
         var myCollider = GetComponent<Collider>();
         if (!myCollider || !myCollider.enabled)
         {
@@ -128,6 +132,7 @@ public class Projectile : NetworkBehaviour
     [ServerCallback]
     protected virtual void OnTriggerEnter(Collider other)
     {
+        if (IsTerminated) return;
         var entity = other.GetComponent<IAnnihilable>();
         if (ReferenceEquals(entity, Launcher)) return;
         TakeEffectAt(entity, transform.position);
@@ -154,9 +159,6 @@ public class Projectile : NetworkBehaviour
                 GetComponent<Collider>().enabled = false;
                 enabled = false;
 
-                Destroy(gameObject);
-                NetworkServer.Destroy(gameObject);
-                //Destroy(gameObject, 5);
                 break;
             case AfterHitBehaviorEnum.Terminate:
                 Terminate();
@@ -202,7 +204,8 @@ public class Projectile : NetworkBehaviour
     [Server]
     protected virtual void Terminate()
     {
-//        Destroy(gameObject);
+        if (IsTerminated) return;
+        IsTerminated = true;
         CoroutineManager.StartCoroutine(new CoroutineManager.Coroutine(0.05f, ()=>NetworkServer.Destroy(gameObject)));
     }
 

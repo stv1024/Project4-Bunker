@@ -11,6 +11,12 @@ public class UnitController : MonoBehaviour
     public Camera Camera;
     public CameraFollow CameraFollow;
 
+    public LeftControlPad LeftControlPad;
+    public JoystickFeedbackGizmo LeftFeedbackGizmo;
+    public RightControlPad RightControlPad;
+    public JoystickFeedbackGizmo RightFeedbackGizmo;
+    public StraightWeaponGizmo StraightWeaponGizmo;
+
     void Awake()
     {
         Instance = this;
@@ -20,13 +26,35 @@ public class UnitController : MonoBehaviour
     {
         FocusedUnit = unit;
         CameraFollow.SetTarget(unit.transform, camp == 2);
+        LeftControlPad.Init(unit, Camera, LeftFeedbackGizmo);
+        RightControlPad.Init(unit, Camera, RightFeedbackGizmo, StraightWeaponGizmo);
     }
+
 
     public BunkerGizmoContainer BunkerGizmoContainer;
 
     public void SwitchSkill(int slotID)
     {
         Debug.LogFormat("SwitchSkill({0})", slotID);
-        if (FocusedUnit) FocusedUnit.CmdSwitchWeapon(slotID);
+        if (FocusedUnit)
+        {
+            FocusedUnit.SwitchWeapon(slotID);
+            RightControlPad.DidSwitchWeapon(slotID);
+        }
+    }
+
+    public void OnFocusedUnitEnterBunker()
+    {
+        LeftControlPad.SortNearbySites();
+        var allBunkerList = BattleEngine.Instance.BunkerList;
+        foreach (var bunker in allBunkerList)
+        {
+            bunker.Gizmo.HideAndDehighlightAllSiteButtons();
+        }
+        for (int i = 0; i < LeftControlPad.SortedCount; i++)
+        {
+            var e = LeftControlPad.SortArray[i];
+            allBunkerList[e.BunkerIndex].Gizmo.ShowHideSiteButton(e.SiteIndex, true);
+        }
     }
 }

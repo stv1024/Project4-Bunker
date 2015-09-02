@@ -93,7 +93,7 @@ public class Unit : NetworkBehaviour, IAnnihilable
 
         NetworkManager.singleton.GetComponent<UManagerHUG>().showGUI = false;
 
-        CmdSwitchWeapon(0);
+        SwitchWeapon(0);
     }
 
     [Command]
@@ -114,7 +114,8 @@ public class Unit : NetworkBehaviour, IAnnihilable
     [ClientRpc]
     public void RpcResetCampInfo(int playerID, int camp)
     {
-        var position = UManager.Instance.BattlefieldInfo.BaseBunkerList[camp].SiteList[0].Position.SetV3Y(1.01f);
+        var homeSite = UManager.Instance.BattlefieldInfo.BaseBunkerList[camp].SiteList[0];
+        var position = homeSite.Position.SetV3Y(1.01f);
         Debug.LogFormat("Unit{2}.RpcResetCampInfo({0},{1})", camp, position, playerID);
         name = "Player Unit " + playerID;
         if (isLocalPlayer)
@@ -122,7 +123,7 @@ public class Unit : NetworkBehaviour, IAnnihilable
             transform.position = position;
             _rebirthPosition = Position;
             UnitController.Instance.Init(this, camp);
-            BattleEngine.Instance.WeaponControlJoystick.Init(this);
+            SetDestination(homeSite);
         }
         if (ActorRenderer) ActorRenderer.material.mainTexture = Parameters.Instance.CampTextureList[Data.Camp];
     }
@@ -147,27 +148,33 @@ public class Unit : NetworkBehaviour, IAnnihilable
     public void SetDestination(BunkerSite destinationBunkerSite)
     {
         DestinationBunkerSite = destinationBunkerSite;
+        Walker.WalkTo(destinationBunkerSite.Position);
     }
 
     void UpdateMove()
     {
-        if (CurrentBunkerSite && Vector3.Distance(Position, CurrentBunkerSite.Position) > 0.1f)
+        if (!localPlayerAuthority) return;
+        if (CurrentBunkerSite && Vector3.Distance(Position, CurrentBunkerSite.Position) > 0.5f)
         {
             CurrentBunkerSite.OnUnitExit(this);
             CurrentBunkerSite = null;
         }
-        if (DestinationBunkerSite && Vector3.Distance(Position, DestinationBunkerSite.Position) <= 0.1f)
+        if (DestinationBunkerSite && Vector3.Distance(Position, DestinationBunkerSite.Position) <= 0.5f)
         {
             CurrentBunkerSite = DestinationBunkerSite;
             DestinationBunkerSite.OnUnitEnter(this);
             DestinationBunkerSite = null;
+
+            if (UnitController.Instance.FocusedUnit == this)
+            {
+                UnitController.Instance.OnFocusedUnitEnterBunker();
+            }
         }
     }
 
     #endregion
 
-    //[Command]
-    public void CmdSwitchWeapon(int skillSlot)
+    public void SwitchWeapon(int skillSlot)
     {
         if (skillSlot < SkillList.Length) CurrentSelectedWeapon = SkillList[skillSlot];
     }
@@ -327,6 +334,18 @@ public class Unit : NetworkBehaviour, IAnnihilable
         return Mathf.Infinity;
     }
 
+    [ClientRpc]
+    public void RpcAttainKillReward()
+    {
+        foreach (var pair in Parameters.Instance.KillReward)
+        {
+            if (pair.i < SkillList.Length)
+            {
+                var weapon = SkillList[pair.i];
+                if (weapon) weapon.Amount += pair.j;
+            }
+        }
+    }
 
     [Server]
     public void Rebirth()
@@ -336,8 +355,6 @@ public class Unit : NetworkBehaviour, IAnnihilable
         Setmp(Data.MP);
         UnitInfoCanvas.gameObject.SetActive(true);
         RpcRebirth();
-
-        CmdSwitchWeapon(0);
     }
 
     [ClientRpc]
@@ -351,6 +368,8 @@ public class Unit : NetworkBehaviour, IAnnihilable
             rgd.velocity = Vector3.zero;
             rgd.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         }
+        Walker.WalkTo(Position);
+        SwitchWeapon(0);
     }
 
 }

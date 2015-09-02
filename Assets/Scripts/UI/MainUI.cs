@@ -29,7 +29,7 @@ public class MainUI : MonoBehaviour
         {
             HPSlider.value = focusedUnit.Data.hp / focusedUnit.Data.HP;
             MPSlider.value = focusedUnit.Data.mp / focusedUnit.Data.MP;
-            TxtDKA.text = string.Format("{0}/0/0", focusedUnit.Data.KillCount);
+            TxtDKA.text = string.Format("{0}/{1}/0", focusedUnit.Data.KillCount, focusedUnit.Data.DieCount);
 
             for (int i = 0; i < TxtSkillAvailableCountList.Length; i++)
             {

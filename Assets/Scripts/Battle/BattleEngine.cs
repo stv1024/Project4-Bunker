@@ -1,4 +1,5 @@
-﻿using Fairwood.Math;
+﻿using System.Collections.Generic;
+using Fairwood.Math;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
@@ -10,9 +11,6 @@ public class BattleEngine : MonoBehaviour
 {
     public static BattleEngine Instance { get; private set; }
 
-    //public AttackControlPad AttackControlPad;
-    public WeaponControlJoystick WeaponControlJoystick;
-
     public static bool IsHost;
 
     public Parameters Parameters;
@@ -20,6 +18,8 @@ public class BattleEngine : MonoBehaviour
 
     public AnimationCurve OnDamagedRedFlashCurve;
     public float OnDamagedRedFlashDuraion = 0.5f;
+
+    public List<Bunker> BunkerList = new List<Bunker>();
 
     void Awake()
     {
@@ -70,19 +70,13 @@ Damage {2}", me.Data.KillCount, me.Data.DieCount, me.Data.CausedDamage);
         CoroutineManager.StartCoroutine(new CoroutineManager.Coroutine(5, UManager.Instance.StopHost));
     }
 
+    //Server
     public void OnUnitDie(Unit unit, Unit killer)
     {
         if (killer && killer != unit)
         {
             killer.Data.KillCount += 1;
-            foreach (var pair in Parameters.KillReward)
-            {
-                if (pair.i < killer.SkillList.Length)
-                {
-                    var weapon = killer.SkillList[pair.i];
-                    if (weapon) weapon.Amount += pair.j;
-                }
-            }
+            killer.RpcAttainKillReward();
         }
     }
 

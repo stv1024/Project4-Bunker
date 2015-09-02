@@ -31,6 +31,8 @@ public class Bunker : MonoBehaviour, IAnnihilable
 
         _hp = HP;
         _oriScale = transform.localScale;
+
+        BattleEngine.Instance.BunkerList.Add(this);
     }
 
     public void OnSiteClick(int siteID)
@@ -41,7 +43,7 @@ public class Bunker : MonoBehaviour, IAnnihilable
 
     public float TakeDamage(Unit caster, float power)
     {
-        var dmg = power*0.5f;
+        var dmg = power*0;//0.5f;
 
         _hp -= dmg;
 

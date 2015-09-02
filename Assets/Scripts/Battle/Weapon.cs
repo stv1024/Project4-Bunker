@@ -22,7 +22,6 @@ public class Weapon : MonoBehaviour
 
     public void Reset(Unit caster, int slotID)
     {
-        Debug.LogFormat("Skill.Reset");
         Caster = caster;
         SlotID = slotID;
         CDRemaining = 0;

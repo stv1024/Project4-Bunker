@@ -7,34 +7,35 @@ using UnityEngine;
 /// </summary>
 public class JoystickFeedbackGizmo : MonoBehaviour
 {
-    public WeaponControlJoystick Joystick;
+    public ScreenJoystick Joystick;
     public Transform CenterObject;
     public GameObject MinCircle;
     public GameObject FallSpot;
     public GameObject DragSpot;
 
-    private WeaponControlJoystick.StateEnum _lastState;
+    private ScreenJoystick.StateEnum _lastState;
 
     void Awake()
     {
         Hide();
     }
 
+    public void Init(ScreenJoystick joystick, Transform centerObject)
+    {
+        Joystick = joystick;
+        CenterObject = centerObject;
+    }
+
     void Update()
     {
-        if (!CenterObject)
-        {
-            var unit = UnitController.Instance.FocusedUnit;
-            if (unit) CenterObject = unit.transform;
-            if (!CenterObject) return;
-        }
+        if (!CenterObject || !Joystick) return;
         transform.position = CenterObject.position.SetV3Y(0.01f);
         if (Joystick.State != _lastState)
         {
             StateTransition(_lastState, Joystick.State);
             _lastState = Joystick.State;
         }
-        if (Joystick.State != WeaponControlJoystick.StateEnum.Idle)
+        if (Joystick.State != ScreenJoystick.StateEnum.Idle)
         {
             FallSpot.SetActive(Joystick.IsValidDrag);
             FallSpot.transform.position = transform.position + Joystick.WorldActualDisplacement;
@@ -42,15 +43,15 @@ public class JoystickFeedbackGizmo : MonoBehaviour
         }
     }
 
-    void StateTransition(WeaponControlJoystick.StateEnum lastState, WeaponControlJoystick.StateEnum curState)
+    void StateTransition(ScreenJoystick.StateEnum lastState, ScreenJoystick.StateEnum curState)
     {
         switch (curState)
         {
-            case WeaponControlJoystick.StateEnum.Idle:
+            case ScreenJoystick.StateEnum.Idle:
                 Hide();
                 break;
-            case WeaponControlJoystick.StateEnum.InvalidDragging:
-            case WeaponControlJoystick.StateEnum.ValidDragging:
+            case ScreenJoystick.StateEnum.InvalidDragging:
+            case ScreenJoystick.StateEnum.ValidDragging:
                 MinCircle.SetActive(true);
                 FallSpot.SetActive(true);
                 DragSpot.SetActive(true);

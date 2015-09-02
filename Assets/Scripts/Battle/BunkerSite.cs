@@ -17,6 +17,13 @@ public class BunkerSite : MonoBehaviour
     {
         get { return transform.position.SetV3Y(0); }
     }
+    /// <summary>
+    /// 朝向，背面是掩体
+    /// </summary>
+    public Vector3 FaceDirection
+    {
+        get { return transform.forward; }
+    }
 
     public void Init(Bunker bunker, int id)
     {
@@ -26,7 +33,8 @@ public class BunkerSite : MonoBehaviour
     public void OnSiteClick()
     {
         Debug.LogFormat("OnSiteClick");
-        UnitController.Instance.FocusedUnit.Walker.WalkTo(Position);
+        var unit = UnitController.Instance.FocusedUnit;
+        unit.SetDestination(this);
     }
     public void OnUnitEnter(Unit unit)
     {
